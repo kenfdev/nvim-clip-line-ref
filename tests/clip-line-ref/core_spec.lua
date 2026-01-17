@@ -59,9 +59,83 @@ describe("clip-line-ref", function()
   end)
 
   describe("special buffer detection", function()
-    it("detects special buffers", function()
-      -- TODO: Implement test
-      pending("not implemented")
+    it("returns false for normal file buffer", function()
+      -- Create a normal buffer with a file name
+      local buf = vim.api.nvim_create_buf(true, false)
+      vim.api.nvim_buf_set_name(buf, "/tmp/test_file.lua")
+
+      local is_special, reason = utils.is_special_buffer(buf)
+      assert.is_false(is_special)
+      assert.is_nil(reason)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("detects terminal buffer", function()
+      -- Create a real terminal buffer
+      local buf = vim.api.nvim_create_buf(false, true)
+      vim.api.nvim_set_current_buf(buf)
+      vim.fn.termopen("echo test")
+
+      local is_special, reason = utils.is_special_buffer(buf)
+      assert.is_true(is_special)
+      assert.are.equal("terminal", reason)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("detects quickfix buffer", function()
+      local buf = vim.api.nvim_create_buf(true, false)
+      vim.bo[buf].buftype = "quickfix"
+
+      local is_special, reason = utils.is_special_buffer(buf)
+      assert.is_true(is_special)
+      assert.are.equal("quickfix", reason)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("detects help buffer", function()
+      local buf = vim.api.nvim_create_buf(true, false)
+      vim.bo[buf].buftype = "help"
+
+      local is_special, reason = utils.is_special_buffer(buf)
+      assert.is_true(is_special)
+      assert.are.equal("help", reason)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("detects nofile (scratch) buffer", function()
+      local buf = vim.api.nvim_create_buf(true, false)
+      vim.bo[buf].buftype = "nofile"
+
+      local is_special, reason = utils.is_special_buffer(buf)
+      assert.is_true(is_special)
+      assert.are.equal("nofile", reason)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("detects buffer without file name", function()
+      local buf = vim.api.nvim_create_buf(true, false)
+      -- Buffer has no name set, buftype is empty
+
+      local is_special, reason = utils.is_special_buffer(buf)
+      assert.is_true(is_special)
+      assert.are.equal("noname", reason)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("uses current buffer when no bufnr provided", function()
+      -- This test verifies the default behavior
+      local current_buf = vim.api.nvim_get_current_buf()
+      local is_special, _ = utils.is_special_buffer()
+
+      -- Result should be consistent with explicitly passing current buffer
+      local is_special2, _ = utils.is_special_buffer(current_buf)
+      assert.are.equal(is_special, is_special2)
     end)
   end)
 end)

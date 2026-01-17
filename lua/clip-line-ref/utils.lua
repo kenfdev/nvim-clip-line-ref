@@ -57,9 +57,22 @@ function M.clear_git_root_cache(filepath)
 end
 
 function M.is_special_buffer(bufnr)
-  -- TODO: Implement special buffer detection
-  -- Check for terminal, quickfix, help, nofile, etc.
-  return false
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+  -- Check buftype - special buffers have non-empty buftype
+  local buftype = vim.bo[bufnr].buftype
+  if buftype ~= "" then
+    -- terminal, quickfix, help, nofile, acwrite, prompt, etc.
+    return true, buftype
+  end
+
+  -- Check if buffer has a valid file name
+  local bufname = vim.api.nvim_buf_get_name(bufnr)
+  if bufname == "" then
+    return true, "noname"
+  end
+
+  return false, nil
 end
 
 function M.get_line_range()
