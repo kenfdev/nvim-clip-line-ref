@@ -6,13 +6,43 @@ local utils = require("clip-line-ref.utils")
 describe("clip-line-ref", function()
   describe("format_reference", function()
     it("formats single line reference", function()
-      -- TODO: Implement test
-      pending("not implemented")
+      local result = core.format_reference("src/main.lua", 42, 42)
+      assert.are.equal("src/main.lua L42", result)
+    end)
+
+    it("formats single line when end_line equals start_line", function()
+      local result = core.format_reference("lua/init.lua", 10, 10)
+      assert.are.equal("lua/init.lua L10", result)
+    end)
+
+    it("formats single line when end_line is nil", function()
+      local result = core.format_reference("src/main.lua", 42, nil)
+      assert.are.equal("src/main.lua L42", result)
     end)
 
     it("formats line range reference", function()
-      -- TODO: Implement test
-      pending("not implemented")
+      local result = core.format_reference("src/main.lua", 13, 17)
+      assert.are.equal("src/main.lua L13-L17", result)
+    end)
+
+    it("handles paths with spaces", function()
+      local result = core.format_reference("path with spaces/file.lua", 5, 5)
+      assert.are.equal("path with spaces/file.lua L5", result)
+    end)
+
+    it("handles paths with special characters", function()
+      local result = core.format_reference(".devcontainer/devcontainer.json", 13, 17)
+      assert.are.equal(".devcontainer/devcontainer.json L13-L17", result)
+    end)
+
+    it("returns nil when path is nil", function()
+      local result = core.format_reference(nil, 42, 42)
+      assert.is_nil(result)
+    end)
+
+    it("returns nil when start_line is nil", function()
+      local result = core.format_reference("src/main.lua", nil, 42)
+      assert.is_nil(result)
     end)
   end)
 

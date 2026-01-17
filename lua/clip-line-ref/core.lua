@@ -6,10 +6,20 @@ local utils = require("clip-line-ref.utils")
 local M = {}
 
 function M.format_reference(path, start_line, end_line)
-  -- TODO: Implement reference formatting
+  if not path or not start_line then
+    return nil
+  end
+
+  -- Default end_line to start_line if not provided
+  end_line = end_line or start_line
+
   -- Single line: "{path} L{line}"
+  if start_line == end_line then
+    return string.format("%s L%d", path, start_line)
+  end
+
   -- Range: "{path} L{start}-L{end}"
-  return nil
+  return string.format("%s L%d-L%d", path, start_line, end_line)
 end
 
 function M.resolve_path(bufnr, use_git_root)
