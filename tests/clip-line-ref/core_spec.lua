@@ -259,6 +259,95 @@ describe("clip-line-ref", function()
     end)
   end)
 
+  describe("clipboard integration", function()
+    local clip = require("clip-line-ref")
+
+    it("copies reference to + register", function()
+      -- Create a buffer with a file name
+      local buf = vim.api.nvim_create_buf(true, false)
+      local cwd = vim.fn.getcwd()
+      local test_path = cwd .. "/lua/clip-line-ref/init.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "line 1", "line 2", "line 3" })
+      vim.api.nvim_set_current_buf(buf)
+      vim.api.nvim_win_set_cursor(0, { 2, 0 })
+
+      -- Clear the register first
+      vim.fn.setreg("+", "")
+
+      -- Call copy()
+      local result = clip.copy()
+
+      -- Verify the reference was returned
+      assert.are.equal("lua/clip-line-ref/init.lua L2", result)
+
+      -- Verify the register was set
+      local register_content = vim.fn.getreg("+")
+      assert.are.equal("lua/clip-line-ref/init.lua L2", register_content)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("returns nil and does not set register for special buffer", function()
+      -- Create a special buffer (nofile)
+      local buf = vim.api.nvim_create_buf(true, false)
+      vim.bo[buf].buftype = "nofile"
+      vim.api.nvim_set_current_buf(buf)
+
+      -- Set a known value in the register
+      vim.fn.setreg("+", "original value")
+
+      -- Call copy()
+      local result = clip.copy()
+
+      -- Should return nil
+      assert.is_nil(result)
+
+      -- Register should be unchanged
+      local register_content = vim.fn.getreg("+")
+      assert.are.equal("original value", register_content)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("get_reference returns formatted reference without copying", function()
+      -- Create a buffer with a file name
+      local buf = vim.api.nvim_create_buf(true, false)
+      local cwd = vim.fn.getcwd()
+      local test_path = cwd .. "/lua/clip-line-ref/core.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "line 1" })
+      vim.api.nvim_set_current_buf(buf)
+      vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+      -- Set a known value in the register
+      vim.fn.setreg("+", "should not change")
+
+      -- Call get_reference()
+      local result = clip.get_reference()
+
+      -- Verify the reference was returned
+      assert.are.equal("lua/clip-line-ref/core.lua L1", result)
+
+      -- Register should be unchanged
+      local register_content = vim.fn.getreg("+")
+      assert.are.equal("should not change", register_content)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("get_reference returns nil for special buffer", function()
+      local buf = vim.api.nvim_create_buf(true, false)
+      vim.bo[buf].buftype = "help"
+      vim.api.nvim_set_current_buf(buf)
+
+      local result = clip.get_reference()
+      assert.is_nil(result)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+  end)
+
   describe("get_line_range", function()
     it("returns cursor line in normal mode", function()
       -- Create a buffer with some content
