@@ -101,4 +101,9 @@ function M.get_line_range()
   return nil, nil
 end
 
+function M.notify(msg, level)
+  level = level or vim.log.levels.INFO
+  vim.notify(msg, level)
+end
+
 return M

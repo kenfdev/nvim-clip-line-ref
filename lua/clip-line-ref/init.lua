@@ -16,9 +16,25 @@ function M.setup(opts)
 end
 
 function M.copy()
+  local bufnr = vim.api.nvim_get_current_buf()
+
+  -- Check for special buffers first and show warning
+  local is_special, reason = utils.is_special_buffer(bufnr)
+  if is_special then
+    utils.notify("Cannot copy line reference from " .. reason .. " buffer", vim.log.levels.WARN)
+    return nil
+  end
+
   local reference = M.get_reference()
   if reference then
     vim.fn.setreg("+", reference)
+
+    -- Build success message with optional unsaved indicator
+    local msg = "Copied: " .. reference
+    if vim.bo[bufnr].modified then
+      msg = msg .. " [unsaved]"
+    end
+    utils.notify(msg)
   end
   return reference
 end

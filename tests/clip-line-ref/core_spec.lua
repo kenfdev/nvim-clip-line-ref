@@ -348,6 +348,136 @@ describe("clip-line-ref", function()
     end)
   end)
 
+  describe("user feedback", function()
+    local clip = require("clip-line-ref")
+
+    it("shows success message when copying", function()
+      -- Create a buffer with a unique file name
+      local buf = vim.api.nvim_create_buf(true, false)
+      local cwd = vim.fn.getcwd()
+      local test_path = cwd .. "/test_feedback_success.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "line 1", "line 2" })
+      vim.api.nvim_set_current_buf(buf)
+      vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+      -- Track notifications
+      local notifications = {}
+      local original_notify = vim.notify
+      vim.notify = function(msg, level)
+        table.insert(notifications, { msg = msg, level = level })
+      end
+
+      -- Call copy()
+      clip.copy()
+
+      -- Restore original notify
+      vim.notify = original_notify
+
+      -- Verify success message was shown
+      assert.are.equal(1, #notifications)
+      assert.is_true(notifications[1].msg:match("^Copied:") ~= nil)
+      assert.is_true(notifications[1].msg:match("test_feedback_success%.lua L1") ~= nil)
+      assert.are.equal(vim.log.levels.INFO, notifications[1].level)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("shows warning for special buffer", function()
+      -- Create a special buffer (nofile)
+      local buf = vim.api.nvim_create_buf(true, false)
+      vim.bo[buf].buftype = "nofile"
+      vim.api.nvim_set_current_buf(buf)
+
+      -- Track notifications
+      local notifications = {}
+      local original_notify = vim.notify
+      vim.notify = function(msg, level)
+        table.insert(notifications, { msg = msg, level = level })
+      end
+
+      -- Call copy()
+      clip.copy()
+
+      -- Restore original notify
+      vim.notify = original_notify
+
+      -- Verify warning message was shown
+      assert.are.equal(1, #notifications)
+      assert.is_true(notifications[1].msg:match("Cannot copy") ~= nil)
+      assert.is_true(notifications[1].msg:match("nofile") ~= nil)
+      assert.are.equal(vim.log.levels.WARN, notifications[1].level)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("includes unsaved indicator when buffer is modified", function()
+      -- Create a buffer with a unique file name
+      local buf = vim.api.nvim_create_buf(true, false)
+      local cwd = vim.fn.getcwd()
+      local test_path = cwd .. "/test_feedback_modified.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "line 1" })
+      vim.api.nvim_set_current_buf(buf)
+      vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+      -- Mark buffer as modified
+      vim.bo[buf].modified = true
+
+      -- Track notifications
+      local notifications = {}
+      local original_notify = vim.notify
+      vim.notify = function(msg, level)
+        table.insert(notifications, { msg = msg, level = level })
+      end
+
+      -- Call copy()
+      clip.copy()
+
+      -- Restore original notify
+      vim.notify = original_notify
+
+      -- Verify unsaved indicator in message
+      assert.are.equal(1, #notifications)
+      assert.is_true(notifications[1].msg:match("%[unsaved%]") ~= nil)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("does not show unsaved indicator for unmodified buffer", function()
+      -- Create a buffer with a unique file name
+      local buf = vim.api.nvim_create_buf(true, false)
+      local cwd = vim.fn.getcwd()
+      local test_path = cwd .. "/test_feedback_unmodified.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "line 1" })
+      vim.api.nvim_set_current_buf(buf)
+      vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+      -- Ensure buffer is not modified
+      vim.bo[buf].modified = false
+
+      -- Track notifications
+      local notifications = {}
+      local original_notify = vim.notify
+      vim.notify = function(msg, level)
+        table.insert(notifications, { msg = msg, level = level })
+      end
+
+      -- Call copy()
+      clip.copy()
+
+      -- Restore original notify
+      vim.notify = original_notify
+
+      -- Verify no unsaved indicator in message
+      assert.are.equal(1, #notifications)
+      assert.is_nil(notifications[1].msg:match("%[unsaved%]"))
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+  end)
+
   describe("get_line_range", function()
     it("returns cursor line in normal mode", function()
       -- Create a buffer with some content
