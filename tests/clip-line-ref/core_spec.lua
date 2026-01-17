@@ -16,6 +16,96 @@ describe("clip-line-ref", function()
     end)
   end)
 
+  describe("resolve_path", function()
+    it("returns relative path to git root for file in repo", function()
+      -- Create a buffer with a file path inside the repo
+      local buf = vim.api.nvim_create_buf(true, false)
+      local cwd = vim.fn.getcwd()
+      local test_path = cwd .. "/lua/clip-line-ref/core.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+
+      local result = core.resolve_path(buf, true)
+
+      -- Should return relative path
+      assert.is_not_nil(result)
+      assert.are.equal("lua/clip-line-ref/core.lua", result)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("returns absolute path when use_git_root is false", function()
+      local buf = vim.api.nvim_create_buf(true, false)
+      local cwd = vim.fn.getcwd()
+      local test_path = cwd .. "/lua/clip-line-ref/core.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+
+      local result = core.resolve_path(buf, false)
+
+      -- Should return absolute path
+      assert.is_not_nil(result)
+      assert.are.equal(test_path, result)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("returns nil for buffer without file name", function()
+      local buf = vim.api.nvim_create_buf(true, false)
+      -- No name set
+
+      local result = core.resolve_path(buf, true)
+
+      assert.is_nil(result)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("uses current buffer when no bufnr provided", function()
+      local current_buf = vim.api.nvim_get_current_buf()
+      local current_name = vim.api.nvim_buf_get_name(current_buf)
+
+      if current_name ~= "" then
+        local result = core.resolve_path(nil, true)
+        assert.is_not_nil(result)
+      else
+        -- If current buffer has no name, should return nil
+        local result = core.resolve_path(nil, true)
+        assert.is_nil(result)
+      end
+    end)
+
+    it("handles paths with special characters", function()
+      local buf = vim.api.nvim_create_buf(true, false)
+      local cwd = vim.fn.getcwd()
+      -- Path with spaces and special chars (simulated)
+      local test_path = cwd .. "/test file with spaces.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+
+      local result = core.resolve_path(buf, true)
+
+      -- Should return the path as-is without escaping
+      assert.is_not_nil(result)
+      assert.are.equal("test file with spaces.lua", result)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("defaults to use_git_root=true when not specified", function()
+      local buf = vim.api.nvim_create_buf(true, false)
+      local cwd = vim.fn.getcwd()
+      local test_path = cwd .. "/lua/clip-line-ref/core.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+
+      -- Call without use_git_root parameter
+      local result = core.resolve_path(buf)
+
+      -- Should return relative path (same as use_git_root=true)
+      assert.is_not_nil(result)
+      assert.are.equal("lua/clip-line-ref/core.lua", result)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+  end)
+
   describe("git root detection", function()
     it("detects git root for file in git repo", function()
       -- Use a file path within this repo
