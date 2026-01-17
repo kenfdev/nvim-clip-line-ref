@@ -76,9 +76,28 @@ function M.is_special_buffer(bufnr)
 end
 
 function M.get_line_range()
-  -- TODO: Implement mode detection and line range extraction
+  local mode = vim.fn.mode()
+
   -- Normal mode: cursor line
-  -- Visual modes: selection range
+  if mode == "n" then
+    local line = vim.api.nvim_win_get_cursor(0)[1]
+    return line, line
+  end
+
+  -- Visual modes: use '< and '> marks for range
+  -- v = character-wise, V = line-wise, <C-v> (^V) = block-wise
+  if mode == "v" or mode == "V" or mode == "\22" then
+    local start_line = vim.fn.line("v")
+    local end_line = vim.fn.line(".")
+
+    -- Ensure start <= end
+    if start_line > end_line then
+      start_line, end_line = end_line, start_line
+    end
+
+    return start_line, end_line
+  end
+
   return nil, nil
 end
 

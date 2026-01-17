@@ -228,4 +228,52 @@ describe("clip-line-ref", function()
       assert.are.equal(is_special, is_special2)
     end)
   end)
+
+  describe("get_line_range", function()
+    it("returns cursor line in normal mode", function()
+      -- Create a buffer with some content
+      local buf = vim.api.nvim_create_buf(true, false)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+        "line 1",
+        "line 2",
+        "line 3",
+        "line 4",
+        "line 5",
+      })
+      vim.api.nvim_set_current_buf(buf)
+
+      -- Set cursor to line 3
+      vim.api.nvim_win_set_cursor(0, { 3, 0 })
+
+      -- Ensure we're in normal mode
+      vim.cmd("stopinsert")
+
+      local start_line, end_line = utils.get_line_range()
+      assert.are.equal(3, start_line)
+      assert.are.equal(3, end_line)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("returns cursor line for single line", function()
+      -- Create a buffer with some content
+      local buf = vim.api.nvim_create_buf(true, false)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+        "line 1",
+      })
+      vim.api.nvim_set_current_buf(buf)
+
+      -- Set cursor to line 1
+      vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+      -- Ensure we're in normal mode
+      vim.cmd("stopinsert")
+
+      local start_line, end_line = utils.get_line_range()
+      assert.are.equal(1, start_line)
+      assert.are.equal(1, end_line)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+  end)
 end)
