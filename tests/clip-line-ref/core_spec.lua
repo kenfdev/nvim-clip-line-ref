@@ -134,6 +134,37 @@ describe("clip-line-ref", function()
 
       vim.api.nvim_buf_delete(buf, { force = true })
     end)
+
+    it("returns absolute path for file outside git root", function()
+      local buf = vim.api.nvim_create_buf(true, false)
+      -- Use a path that exists but is outside the git root
+      -- Note: On macOS, /tmp is a symlink to /private/tmp, so we use the resolved path
+      local test_path = vim.fn.resolve("/tmp") .. "/outside_git_root_test.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+
+      local result = core.resolve_path(buf, true)
+
+      -- Should return absolute path since file is not under git root
+      assert.is_not_nil(result)
+      assert.are.equal(test_path, result)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("handles deeply nested paths correctly", function()
+      local buf = vim.api.nvim_create_buf(true, false)
+      local cwd = vim.fn.getcwd()
+      local test_path = cwd .. "/tests/clip-line-ref/core_spec.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+
+      local result = core.resolve_path(buf, true)
+
+      -- Should return relative path with correct nesting
+      assert.is_not_nil(result)
+      assert.are.equal("tests/clip-line-ref/core_spec.lua", result)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
   end)
 
   describe("git root detection", function()
@@ -175,6 +206,30 @@ describe("clip-line-ref", function()
     it("returns cwd for nil filepath", function()
       local result = utils.get_git_root(nil)
       assert.are.equal(vim.fn.getcwd(), result)
+    end)
+
+    it("falls back to cwd for non-git directory", function()
+      -- Use /tmp which is unlikely to be a git repo
+      local non_git_path = "/tmp/not_a_git_repo_test_file.txt"
+      utils.clear_git_root_cache(non_git_path)
+
+      local result = utils.get_git_root(non_git_path)
+
+      -- Should fall back to cwd when not in a git repo
+      assert.are.equal(vim.fn.getcwd(), result)
+    end)
+
+    it("caches the fallback result for non-git directories", function()
+      local non_git_path = "/tmp/another_non_git_test.txt"
+      utils.clear_git_root_cache(non_git_path)
+
+      -- First call
+      local result1 = utils.get_git_root(non_git_path)
+      -- Second call should return same cached result
+      local result2 = utils.get_git_root(non_git_path)
+
+      assert.are.equal(result1, result2)
+      assert.are.equal(vim.fn.getcwd(), result1)
     end)
   end)
 
