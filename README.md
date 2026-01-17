@@ -2,6 +2,8 @@
 
 A Neovim plugin to copy file path and line number reference to the system clipboard.
 
+![Demo](assets/nvim.gif)
+
 ## Features
 
 - Copy current line reference in normal mode
