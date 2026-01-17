@@ -15,7 +15,8 @@ function M.setup(opts)
   cfg = vim.tbl_deep_extend("force", cfg, opts)
 end
 
-function M.copy()
+function M.copy(opts)
+  opts = opts or {}
   local bufnr = vim.api.nvim_get_current_buf()
 
   -- Check for special buffers first and show warning
@@ -25,7 +26,7 @@ function M.copy()
     return nil
   end
 
-  local reference = M.get_reference()
+  local reference = M.get_reference(opts)
   if reference then
     vim.fn.setreg("+", reference)
 
@@ -39,7 +40,8 @@ function M.copy()
   return reference
 end
 
-function M.get_reference()
+function M.get_reference(opts)
+  opts = opts or {}
   local bufnr = vim.api.nvim_get_current_buf()
 
   -- Check for special buffers
@@ -54,7 +56,13 @@ function M.get_reference()
     return nil
   end
 
-  local start_line, end_line = utils.get_line_range()
+  -- Use provided range (from command) or detect from mode
+  local start_line, end_line
+  if opts.line1 and opts.line2 then
+    start_line, end_line = opts.line1, opts.line2
+  else
+    start_line, end_line = utils.get_line_range()
+  end
   return core.format_reference(path, start_line, end_line)
 end
 

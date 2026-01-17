@@ -525,4 +525,92 @@ describe("clip-line-ref", function()
       vim.api.nvim_buf_delete(buf, { force = true })
     end)
   end)
+
+  describe("copy with explicit range", function()
+    local clip = require("clip-line-ref")
+
+    it("uses provided line range when opts.line1 and opts.line2 are given", function()
+      -- Create a buffer with a file name
+      local buf = vim.api.nvim_create_buf(true, false)
+      local cwd = vim.fn.getcwd()
+      local test_path = cwd .. "/lua/clip-line-ref/init.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+        "line 1",
+        "line 2",
+        "line 3",
+        "line 4",
+        "line 5",
+      })
+      vim.api.nvim_set_current_buf(buf)
+      -- Set cursor to line 1 (different from the range we'll provide)
+      vim.api.nvim_win_set_cursor(0, { 1, 0 })
+
+      -- Clear the register first
+      vim.fn.setreg("+", "")
+
+      -- Call copy() with explicit range (simulating visual selection of lines 2-4)
+      local result = clip.copy({ line1 = 2, line2 = 4 })
+
+      -- Verify the reference uses the provided range, not the cursor position
+      assert.are.equal("lua/clip-line-ref/init.lua L2-L4", result)
+
+      -- Verify the register was set
+      local register_content = vim.fn.getreg("+")
+      assert.are.equal("lua/clip-line-ref/init.lua L2-L4", register_content)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("uses cursor line when no range is provided", function()
+      -- Create a buffer with a file name
+      local buf = vim.api.nvim_create_buf(true, false)
+      local cwd = vim.fn.getcwd()
+      local test_path = cwd .. "/lua/clip-line-ref/core.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+        "line 1",
+        "line 2",
+        "line 3",
+      })
+      vim.api.nvim_set_current_buf(buf)
+      vim.api.nvim_win_set_cursor(0, { 2, 0 })
+
+      -- Clear the register first
+      vim.fn.setreg("+", "")
+
+      -- Call copy() without explicit range
+      local result = clip.copy()
+
+      -- Verify the reference uses the cursor position
+      assert.are.equal("lua/clip-line-ref/core.lua L2", result)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+
+    it("handles single line range (line1 == line2)", function()
+      -- Create a buffer with a file name
+      local buf = vim.api.nvim_create_buf(true, false)
+      local cwd = vim.fn.getcwd()
+      local test_path = cwd .. "/lua/clip-line-ref/utils.lua"
+      vim.api.nvim_buf_set_name(buf, test_path)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
+        "line 1",
+        "line 2",
+        "line 3",
+      })
+      vim.api.nvim_set_current_buf(buf)
+
+      -- Clear the register first
+      vim.fn.setreg("+", "")
+
+      -- Call copy() with single line range
+      local result = clip.copy({ line1 = 3, line2 = 3 })
+
+      -- Verify single line format (no range)
+      assert.are.equal("lua/clip-line-ref/utils.lua L3", result)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end)
+  end)
 end)
