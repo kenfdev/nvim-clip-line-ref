@@ -20,6 +20,4 @@ vim.keymap.set("n", "<leader>yl", function()
   require("clip-line-ref").copy()
 end, { desc = "Copy line reference" })
 
-vim.keymap.set("v", "<leader>yl", function()
-  require("clip-line-ref").copy()
-end, { desc = "Copy line range reference" })
+vim.keymap.set("v", "<leader>yl", ":ClipLineRef<CR>", { desc = "Copy line range reference" })
