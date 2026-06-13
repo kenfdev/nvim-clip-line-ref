@@ -165,6 +165,29 @@ describe("clip-line-ref", function()
 
       vim.api.nvim_buf_delete(buf, { force = true })
     end)
+
+    it("preserves the opened path for files inside symlink directories", function()
+      local cwd = vim.fn.getcwd()
+      local base = cwd .. "/test-symlink-paths"
+      local real_dir = base .. "/real"
+      local link_dir = base .. "/link"
+      local opened_path = "test-symlink-paths/link/foo.txt"
+
+      vim.fn.delete(base, "rf")
+      vim.fn.mkdir(real_dir, "p")
+      vim.fn.writefile({ "line 1" }, real_dir .. "/foo.txt")
+      vim.fn.system({ "ln", "-s", real_dir, link_dir })
+
+      local buf = vim.api.nvim_create_buf(true, false)
+      vim.api.nvim_buf_set_name(buf, opened_path)
+
+      local result = core.resolve_path(buf, true)
+
+      assert.are.equal(opened_path, result)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+      vim.fn.delete(base, "rf")
+    end)
   end)
 
   describe("git root detection", function()
